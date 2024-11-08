@@ -2,11 +2,13 @@
 from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
 from httpx import AsyncClient
-from fastapi import status
 from jwt import decode, get_unverified_header
 from jwt.algorithms import RSAAlgorithm
+from sqlmodel import Session, select
+from datetime import datetime
 
 from conf import GoogleConfig
+from data import CatatUser, CatatUserToken, LoginMethod
 
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 CERT_URL = "https://www.googleapis.com/oauth2/v3/certs"
@@ -41,6 +43,13 @@ class GoogleUserSession(BaseModel):
     email: str
     name: str
     picture: str
+
+class ExpiredException(Exception):
+
+    def __init__(self, expiry_date: datetime, current_time: datetime, error: object) -> None:
+        super().__init__(error)
+        self.expiry_date: datetime = expiry_date
+        self.current_time: datetime = current_time
 
 # TODO: cache this
 async def get_google_oauth_certs() -> GoogleCertResponse:
@@ -109,3 +118,12 @@ async def google_request_token(authorization_code: str, scope: str, google_confi
         response_content = response.content.decode(encoding='utf-8')
         return GoogleTokenResponse.model_validate_json(response_content)
 
+def verify_access_token(access_token: str, method: LoginMethod, db: Session):
+
+    statement = select(CatatUserToken).where(CatatUserToken.access_token == access_token and CatatUserToken.method == method)
+    result = db.exec(statement).one()
+
+    current_time = datetime.now()
+
+    if result.expiry_date < current_time:
+        raise ExpiredException(result.expiry_date, current_time, "Token expired")

@@ -6,8 +6,9 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from auth import get_google_oauth_certs, google_login, google_request_token, parse_token_id
-from data import CatatUser
+from data import CatatUser, LoginMethod
 from deps import AppConfigDep, DbDep
+
 
 # TODO: add dependency for rerouting things when already token already exist
 auth_router = APIRouter(
@@ -16,8 +17,6 @@ auth_router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-class LoginMethod(StrEnum):
-    Google = "google"
 
 class ErrorResponse(BaseModel):
     error_message: str
