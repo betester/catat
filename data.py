@@ -16,6 +16,7 @@ class CatatUserToken(SQLModel, table=True):
     access_token: str = Field(primary_key=True)
     refresh_token: str = Field(nullable = False)
     method: LoginMethod  = Field(nullable = False)
+    email: str = Field(nullable = False)
     expiry_date: datetime
 
 class DataType(StrEnum):

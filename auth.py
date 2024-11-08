@@ -16,6 +16,7 @@ CERT_URL = "https://www.googleapis.com/oauth2/v3/certs"
 class GoogleTokenResponse(BaseModel):
     id_token: str
     access_token: str
+    refresh_token: str
     expires_in: int
     scope: str
     token_type: str
@@ -127,3 +128,22 @@ def verify_access_token(access_token: str, method: LoginMethod, db: Session):
 
     if result.expiry_date < current_time:
         raise ExpiredException(result.expiry_date, current_time, "Token expired")
+
+def store_user_token(token: CatatUserToken, db: Session) -> CatatUserToken:
+        db.add(token)
+        db.commit()
+        db.refresh(token)
+        return token
+
+def find_catat_user(email: str, db: Session) -> CatatUser | None:
+    try:
+        return db.get_one(CatatUser, email)
+    except Exception:
+        return None
+
+def store_catat_user(user: CatatUser, db: Session) -> CatatUser:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+
